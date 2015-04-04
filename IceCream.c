@@ -17,18 +17,18 @@
 #define NUMBER_OF_TABLES 2
 
 sem_t queue_mutex[NUMBER_OF_TABLES];			/* a mutex variable used for controlling customers on the tables */
-sem_t table_sem;								/* the semaphore which holds the capacity of the total people allowed in the shop, i.e 8 */
-sem_t queue_sem[NUMBER_OF_TABLES];				/* the semaphore used to describe how only four people can sit at one table */
+sem_t table_sem;					/* the semaphore which holds the capacity of the total people allowed in the shop, i.e 8 */
+sem_t queue_sem[NUMBER_OF_TABLES];			/* the semaphore used to describe how only four people can sit at one table */
 sem_t conditional[NUMBER_OF_TABLES];			/* a sempahore used to control the flow of customers in each table */
 
-int count = 0;									/* this is a counter which counts the executions of threads */
+int count = 0;						/* this is a counter which counts the executions of threads */
 
 /*
 * A data-structure used to model the airplanes
 */
 typedef struct {
 	int id; 		/* The ID of the customer */
-	pthread_t tid; 	/* The thread ID of the customer */
+	pthread_t tid; 		/* The thread ID of the customer */
 } customer;
 
 /*
@@ -47,22 +47,22 @@ static void check_for_table(int id) {
 */
 static void occupy_table(int id) {
 
-	int num = NUMBER_OF_CUSTOMERS % 4;									/* finding those customers who will come and leave individually */
+	int num = NUMBER_OF_CUSTOMERS % 4;		/* finding those customers who will come and leave individually */
 	count++;															/* this counter counts the number of customers (threads) coming in */
 	int sval, sval_one, sval_two, val_one, val_two, val_three, val_four;
 
-	sem_getvalue(&queue_sem[0], &val_one);								/* getting the value of the number of customers on table 1 */
-	sem_getvalue(&queue_sem[1], &val_two);								/* getting the value of the number of customers on table 2 */
-	sem_getvalue(&conditional[0], &val_three);							/* getting the value of the variable controlling entry on table 1 */
-	sem_getvalue(&conditional[1], &val_four);							/* getting the value of the variable controlling entry on table 2 */
+	sem_getvalue(&queue_sem[0], &val_one);		/* getting the value of the number of customers on table 1 */
+	sem_getvalue(&queue_sem[1], &val_two);		/* getting the value of the number of customers on table 2 */
+	sem_getvalue(&conditional[0], &val_three);	/* getting the value of the variable controlling entry on table 1 */
+	sem_getvalue(&conditional[1], &val_four);	/* getting the value of the variable controlling entry on table 2 */
 
 
-    if (val_three == 1 && val_one > 0) {								/* a conditional statement for the first table */
+    if (val_three == 1 && val_one > 0) {						/* a conditional statement for the first table */
     	if ((NUMBER_OF_CUSTOMERS - count) < 4 && NUMBER_OF_CUSTOMERS - num  < count) {	/* a statement for customers to leave individually */
-    		sem_wait(&queue_sem[0]);									/* decrement semaphore to signify that customer sits on the table */
+    		sem_wait(&queue_sem[0]);						/* decrement semaphore to signify that customer sits on the table */
 	 	   	printf("Customer %d sits on table 1!\n", id);
 	    	sem_getvalue(&queue_sem[0], &sval);						
-	        sem_post(&queue_sem[0]);									/* increment to signify that customer leaves table */
+	        sem_post(&queue_sem[0]);						/* increment to signify that customer leaves table */
 	    	sem_getvalue(&conditional[0], &val_three);
 	  	    sem_getvalue(&queue_sem[0], &sval_one);
 
@@ -71,12 +71,12 @@ static void occupy_table(int id) {
 	    	if (val_three == 0 && sval_one == 4 && val_three < 2) {		/* change the conditional sempahore back to to make this if-statement usable by another thread */
 	    		sem_post(&conditional[0]);
 	    	} 
-	    	sem_post(&table_sem);										/* increment the table sempahore to signal an open place on the table */
+	    	sem_post(&table_sem);						/* increment the table sempahore to signal an open place on the table */
 	    	goto end;													/* goto used to avoid the coming lines of code */
     	}	
 
     	/* this section deals with all 4 customers leaving together from a table */
-		sem_wait(&queue_sem[0]);										/* decrement semaphore queue for a table */
+		sem_wait(&queue_sem[0]);					/* decrement semaphore queue for a table */
 	    printf("Customer %d sits on table 1!\n", id);
 	    sem_getvalue(&queue_sem[0], &sval);			
 	    if (sval != 0) {
@@ -96,34 +96,34 @@ static void occupy_table(int id) {
 	    	sem_post(&conditional[0]);
 	    } 
 	    sem_post(&table_sem);					/* increment the table sempahore to signal an open place on the table */		
-	    goto end;								/* goto used to avoid the coming lines of code */
+	    goto end;							/* goto used to avoid the coming lines of code */
 
 	}
 
     if (val_four == 1 && val_two > 0) {													/* a conditional statement for the second table */
     	if ((NUMBER_OF_CUSTOMERS - count) < 4 && NUMBER_OF_CUSTOMERS - num < count) {	/* a statement for customers to leave individually */
-    		sem_wait(&queue_sem[1]);									/* decrement semaphore to signify that customer sits on the table */
+    		sem_wait(&queue_sem[1]);						/* decrement semaphore to signify that customer sits on the table */
 	 	   	printf("Customer %d sits on table 2!\n", id);
 	    	sem_getvalue(&queue_sem[1], &sval);
-	        sem_post(&queue_sem[1]);									/* increment to signify that customer leaves table */
+	        sem_post(&queue_sem[1]);						/* increment to signify that customer leaves table */
 	    	sem_getvalue(&conditional[1], &val_four);
 	  	    sem_getvalue(&queue_sem[1], &sval_two);
 
 		 	printf("Customer %d leaves table 2!\n", id);   
 		    sleep(5);
-	    	if (val_four == 0 && sval_two == 4 && val_four < 2) {		/* change the conditional sempahore back to to make this if-statement usable by another thread */
+	    	if (val_four == 0 && sval_two == 4 && val_four < 2) {			/* change the conditional sempahore back to to make this if-statement usable by another thread */
 	    		sem_post(&conditional[1]);
 	    	} 
-	    	sem_post(&table_sem);										/* increment the table sempahore to signal an open place on the table */
+	    	sem_post(&table_sem);							/* increment the table sempahore to signal an open place on the table */
 	    	goto end;													/* goto used to avoid the coming lines of code */
     	}
 
     	/* this section deals with all 4 customers leaving together from a table */
-		sem_wait(&queue_sem[1]);										/* decrement semaphore queue for a table */
+		sem_wait(&queue_sem[1]);						/* decrement semaphore queue for a table */
 	    printf("Customer %d sits on table 2!\n", id);
 	    sem_getvalue(&queue_sem[1], &sval);
 	    if (sval != 0) {
-	        sem_wait(&queue_mutex[1]);								/* enter critical section if there are still spaces left on the table */
+	        sem_wait(&queue_mutex[1]);		/* enter critical section if there are still spaces left on the table */
 	    }else {
 	    	sem_wait(&conditional[1]);		/* when fourth customer sits on table, decrease the conditonal semaphore to prevent another customer from approaching the table */
 	        sem_post(&queue_mutex[1]);
@@ -139,7 +139,7 @@ static void occupy_table(int id) {
 	    } 
 	 	printf("Customer %d leaves table 2!\n", id);  
 	    sleep(2);
-	 	sem_post(&table_sem); 									/* increment the table sempahore to signal an open place on the table */
+	 	sem_post(&table_sem); 					/* increment the table sempahore to signal an open place on the table */
 	}
 	end:;		/* the jump done from the goto statement reaches the end of the function which does nothing */
 }
